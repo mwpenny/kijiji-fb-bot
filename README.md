@@ -12,7 +12,7 @@ A node.js bot that scrapes recent [Kijiji](http://www.kijiji.ca) ads and sends t
 * [facebook-chat-api](http://github.com/Schmavery/facebook-chat-api) - unofficial Facebook chat API for node.js
 
 ### Installation
-`npm install kijiji-fb-notifier`
+`npm install kijiji-fb-bot`
 
 ### Configuration
 You can configure the bot by placing the following JSON files in a configuration directory:
