@@ -1,4 +1,4 @@
-# kijiji-fb-notifier
+# kijiji-fb-bot
 A node.js bot that scrapes recent [Kijiji](http://www.kijiji.ca) ads and sends them in a Facebook message.
 
 

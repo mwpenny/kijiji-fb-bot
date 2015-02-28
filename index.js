@@ -37,7 +37,7 @@ var scrapeNewAds = function(startDate, callback) {
             console.log("[+] " + tmpAds.length + " ads scraped");
             callback(err, tmpAds);
         } else {
-            console.log("[-] Error scraping ads " + err);
+            console.error("[-] Error scraping ads " + err);
             callback(err, null);
         }
     });
@@ -63,7 +63,7 @@ var sendNewAds = function(thread, callback) {
             state.lastAds = ads;
             state.lastScrapeDate = new Date();
             
-            var header = "~~~ " + state.lastAds.length + " ads since last scrape ~~~\r\n";            
+            var header = "~~~ " + state.lastAds.length + " ad(s) since last scrape ~~~\r\n";            
             sendAdList(header, state.lastAds, thread);
         } else {
             chat.sendMessage("Error scraping ads (see console)", thread, callback);
@@ -113,7 +113,7 @@ var sendHelp = function(thread, callback) {
 
 /*Sends an error for a wrong command*/
 var sendUnknownCommand = function(command, thread, callback) {
-    chat.sendMessage("unknown command '" + command + "'", thread, callback);
+    chat.sendMessage("Unknown command '" + command + "'", thread, callback);
 };
 
 /*The function called every scrape interval*/
@@ -127,15 +127,15 @@ var chatListener = function(err, msg, stopListening) {
     if (err) return console.error(err);
     if (!state.running) return stopListening();
     
+    //Commands must start with the bot's name
     if (msg.body.indexOf(state.botProps.name + " ") === 0) {
-        var query = msg.body.split(state.botProps.name + " ")[1].split(" ");
-        
+        var query = msg.body.split(state.botProps.name + " ")[1].split(" ");    
         var command = query[0];
         var args = query.slice(1, query.length).join(" ");
-        
+
         //Command handlers
         if (command === "list")
-            sendAdList("~~~ last ads scraped (" + state.lastAds.length + ") ~~~\r\n",
+            sendAdList("~~~ last ad(s) scraped (" + state.lastAds.length + ") ~~~\r\n",
                        state.lastAds, msg.thread_id);
         else if (command === "scrape")
             sendNewAds(msg.thread_id);
@@ -152,7 +152,7 @@ var chatListener = function(err, msg, stopListening) {
 var stop = function() {
     state.running = false;
     clearInterval(state.scrapeTimer);    
-    console.log("[+] " + state.botProps.name + " stopped");
+    console.log("[+] " + state.botProps.name + " set to stop");
 }
 
 /*Initializes the bot*/
@@ -160,15 +160,19 @@ var init = function(configDir, callback) {
     console.log("[+] Initializing bot...");
 
     //Load preferences
-    state.botProps = JSON.parse(fs.readFileSync(configDir + "/botprops.json", 'utf8'));
-    state.adPrefs = JSON.parse(fs.readFileSync(configDir + "/adprefs.json", 'utf8'));
-    state.searchParams = JSON.parse(fs.readFileSync(configDir + "/searchparams.json", 'utf8'));
+    state.botProps = JSON.parse(fs.readFileSync(configDir + "/botprops.json"));
+    state.adPrefs = JSON.parse(fs.readFileSync(configDir + "/adprefs.json"));
+    state.searchParams = JSON.parse(fs.readFileSync(configDir + "/searchparams.json"));
 
     state.running = true;
 
     //Start listening in the chat
     fb(configDir + "/facebook.json", function(err, api) {
-        if (err) return callback(err, null);
+        if (err) {
+            state.running = false;
+            console.error("[-] Error starting bot " + err);
+            return callback(err, null);
+        }
         api.listen(chatListener);
         
         chat = api;
