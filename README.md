@@ -22,7 +22,8 @@ You can configure the bot by placing the following JSON files in a configuration
  {
     "name": "bot name (used for chat commands)",
     "chatId": <chat id to send automatic updates>,
-    "scrapeInterval": <frequency of scrapes (in ms)>
+    "scrapeInterval": <frequency of scrapes (in ms)>,
+    "remoteAdmin": <1 or 0>,
  }
 ```
 
@@ -65,5 +66,13 @@ The bot can be interacted with by sending it Facebook messages. Each command mus
 * `info` - The bot will reply with information about its state.
 * `help` - The bot will reply with information about its chat commands.
 
+Additionally, if `remoteAdmin` is set to 1 in `botprops.json`, the following chat commands will be available:
+
+* `botprop [prop] [val]` - Will set the value of property `prop` specified in `botprops.json` to `val`.
+* `adpref [pref] [val]` - Will set the value of preference `pref` specified in `adprefs.json` to `val`.
+* `searchparam [param] [val]` - Will set the value of parameter `param` specified in `searchparams.json` to `val`.
+
+If the `val` argument is omitted for any of these commands, the bot will reply with the current value.
+
 ##### Example usage
-`[BOTNAME] [COMMAND]`
+`[BOTNAME] [COMMAND] [ARGS]`
