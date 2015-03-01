@@ -4,6 +4,7 @@
 var fs = require("fs");
 var kijiji = require("kijiji-scraper");
 var fb = require("facebook-chat-api");
+var pkg = require("./package.json");
 
 var state = {
     "botProps": {},
@@ -24,7 +25,7 @@ var scrapeNewAds = function(startDate, callback) {
     kijiji.query(state.adPrefs, state.searchParams, function(err, ads) {    
         if (!err) {
             tmpAds = [];
-            
+
             //Only add ads newer than the start date
             for (var i=0; i < ads.length; i++) {
                 if (ads[i].hasOwnProperty("dc:date")) {
@@ -75,23 +76,34 @@ var sendNewAds = function(thread, callback) {
 var sendInfo = function(thread, callback) {
     console.log("[+] Sending info...");
 
-    //Send vars to chat
-    var info = "~~~ " + state.botProps.name + " ~~~\r\n" + 
-               "Scrape interval: " + state.botProps.scrapeInterval + "ms\r\n" +
+    var info = "~~~ kijiji-fb-bot v" + pkg.version + " ~~~\r\n" +
                "Last scrape: " + state.lastScrapeDate + "\r\n" +
                "Ads found at last scrape: " + state.lastAds.length + "\r\n";
     
+    //Add bot properties to output
+    info += "\r\n~~~ bot properties ~~~\r\n";
+    for (var prop in state.botProps) {
+        if (state.botProps.hasOwnProperty(prop)) {
+            info += prop + ": " + state.botProps[prop] + "\r\n";
+        }
+    }
+
+    //Add ad preferences to output
+    info += "\r\n~~~ ad preferences ~~~\r\n";
+    for (var prop in state.adPrefs) {
+        if (state.adPrefs.hasOwnProperty(prop)) {
+            info += prop + ": " + state.adPrefs[prop] + "\r\n";
+        }
+    }
+
+    //Add search parameters to output
     info += "\r\n~~~ search parameters ~~~\r\n";
-    for (var pref in state.adPrefs) {
-        if (state.adPrefs.hasOwnProperty(pref))
-            info += pref + ": " + state.adPrefs[pref] + "\r\n";
+    for (var prop in state.searchParams) {
+        if (state.searchParams.hasOwnProperty(prop)) {
+            info += prop + ": " + state.searchParams[prop] + "\r\n";
+        }
     }
-               
-    for (var param in state.searchParams) {
-        if (state.searchParams.hasOwnProperty(param))
-            info += param + ": " + state.searchParams[param] + "\r\n";
-    }
-               
+
     chat.sendMessage(info, thread, callback);
 };
 
@@ -103,13 +115,45 @@ var sendHelp = function(thread, callback) {
                "I have a have a few useful commands you can use.\r\n" +
                "Prefix a command with my name, so I know you're talking to me.\r\n\r\n" +
                "Commands:\r\n" +
-               "\tlist\t\tRetrieves a list of the last scraped ads.\r\n" +
-               "\tscrape\tRetrieves ads posted since the last scrape.\r\n" +
-               "\tinfo\t\tDisplays some basic state information.\r\n" +
-               "\thelp\t\tDisplays this help information.";
+               "\tlist\t\t\t\t\tGets a list of the last scraped ads.\r\n" +
+               "\tscrape\t\t\t\tGets ads posted since the last scrape.\r\n" +
+               "\tinfo\t\t\t\t\tGets bot state information.\r\n";
+
+    //Only show property-changing commands if they're allowed
+    if (state.botProps.remoteAdmin) {
+        help += "\tbotprop [prop] [val]\t\tGets/sets a bot property.\r\n" +
+                "\tadpref [pref] [val]\t\t\tGets/sets an ad search preference.\r\n" +
+                "\tsearchparam [param] [val]\tGets/sets an ad search parameter.\r\n";
+    }
+
+    help += "\thelp\t\t\t\t\tDisplays this help information.";
 
     chat.sendMessage(help, thread, callback);
 };
+
+/*Gets/sets a property of an object*/
+var modProp = function(propObj, prop, val, thread, callback) {
+    var response;
+
+    //Prop not valid
+    if (!propObj.hasOwnProperty(prop)) {
+        response = "Property '" + prop + "' not found";
+    }
+    //No value to set -- return the current value
+    else if (!val) {
+        console.log("[+] Sending property value...");
+        response = "Value of property '" + prop + "' is '" + propObj[prop] + "'";
+    }
+    //Set a new value
+    else {
+        console.log("[+] Setting property value...");
+        var newVal = propObj[prop].constructor(val); //want new val to be same type as old
+        response = "Value of property '" + prop + "' changed to '" + newVal + "'";
+        propObj[prop] = newVal;
+    }
+
+    chat.sendMessage(response, thread, callback);
+}
 
 /*Sends an error for a wrong command*/
 var sendUnknownCommand = function(command, thread, callback) {
@@ -133,12 +177,27 @@ var chatListener = function(err, msg, stopListening) {
         var command = query[0];
         var args = query.slice(1, query.length).join(" ");
 
-        //Command handlers
+        /*Command handlers*/
+
+        //Only check for property-changing commands if they're allowed
+        if (state.botProps.remoteAdmin) {
+            var argArr = args.split(" ");
+            var prop = argArr[0];
+            var val = argArr.slice(1, argArr.length).join(" ");
+
+            if (command === "botprop")
+                return modProp(state.botProps, prop, val, msg.thread_id);
+            else if (command === "adpref")
+                return modProp(state.adPrefs, prop, val, msg.thread_id);
+            else if (command === "searchparam")
+                return modProp(state.searchParams, prop, val, msg.thread_id);
+        }
+
         if (command === "list")
             sendAdList("~~~ last ad(s) scraped (" + state.lastAds.length + ") ~~~\r\n",
                        state.lastAds, msg.thread_id);
         else if (command === "scrape")
-            sendNewAds(msg.thread_id);
+            sendNewAds(msg.thread_id);  
         else if (command === "info")
             sendInfo(msg.thread_id);
         else if (command === "help")
@@ -151,7 +210,7 @@ var chatListener = function(err, msg, stopListening) {
 /*Sets the bot to stop after the next message is received*/
 var stop = function() {
     state.running = false;
-    clearInterval(state.scrapeTimer);    
+    clearInterval(state.scrapeTimer);
     console.log("[+] " + state.botProps.name + " set to stop");
 }
 
@@ -179,7 +238,7 @@ var init = function(configDir, callback) {
         console.log("[+] " + state.botProps.name + " is listening");
         
         if (state.botProps.hasOwnProperty("scrapeInterval") && state.botProps.scrapeInterval >= 0)
-            state.scrapeTimer = setInterval(scheduledScrape, state.botProps.scrapeInterval);        
+            state.scrapeTimer = setInterval(scheduledScrape, state.botProps.scrapeInterval);
         
         callback(null, stop);
     });
