@@ -142,15 +142,19 @@ var modProp = function(propObj, prop, val, thread, callback) {
     }
     //No value to set -- return the current value
     else if (!val) {
-        console.log("[+] Sending property value...");
         response = "Value of property '" + prop + "' is '" + propObj[prop] + "'";
     }
     //Set a new value
     else {
-        console.log("[+] Setting property value...");
+        console.log("[+] Sending property value...");
+
         var newVal = propObj[prop].constructor(val); //want new val to be same type as old
         response = "Value of property '" + prop + "' changed to '" + newVal + "'";
         propObj[prop] = newVal;
+        
+        //Update the scrape timer if the interval was changed
+        if (prop === "scrapeInterval")
+            updateInterval(state.scrapeTimer, scheduledScrape, state.botProps.scrapeInterval);
     }
 
     chat.sendMessage(response, thread, callback);
