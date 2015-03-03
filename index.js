@@ -6,11 +6,12 @@ var kijiji = require("kijiji-scraper");
 var fb = require("facebook-chat-api");
 var pkg = require("./package.json");
 
+var chat = null;
+
 var state = {
     "botProps": {},
     "adPrefs": {},
     "searchParams": {},
-    "chat": null,
     "running": false,
     "scrapeTimer": null,
     "lastAds": [],
@@ -160,10 +161,17 @@ var sendUnknownCommand = function(command, thread, callback) {
     chat.sendMessage("Unknown command '" + command + "'", thread, callback);
 };
 
+/*Updates an interval with a new timeout*/
+var updateInterval = function(interval, func, timeout) {
+    clearInterval(interval);
+    interval = timeout >= 0 ? setInterval(func, timeout) : null;
+};
+
 /*The function called every scrape interval*/
 var scheduledScrape = function() {
     chat.sendMessage("Performing scheduled scrape...", state.botProps.chatId);
     sendNewAds(state.botProps.chatId);
+    updateInterval(state.scrapeTimer, scheduledScrape, state.botProps.scrapeInterval);
 };
 
 /*Listens for bot commands*/
