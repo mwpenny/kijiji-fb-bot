@@ -4,8 +4,8 @@
   "description": "A bot that sends Facebook messages with new Kijiji ads",
   "main": "index.js",
   "dependencies": {
-    "facebook-chat-api": "~0.1.3",
-    "kijiji-scraper": "~1.1.2"
+    "facebook-chat-api": "~0.2.10",
+    "kijiji-scraper": "~1.2.0"
   },
   "devDependencies": {},
   "scripts": {},

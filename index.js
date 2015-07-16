@@ -230,6 +230,8 @@ var stop = function() {
 var init = function(configDir, callback) {
     console.log("[+] Initializing bot...");
 
+    var creds = JSON.parse(fs.readFileSync(configDir + "/facebook.json"));
+
     //Load preferences
     state.botProps = JSON.parse(fs.readFileSync(configDir + "/botprops.json"));
     state.adPrefs = JSON.parse(fs.readFileSync(configDir + "/adprefs.json"));
@@ -238,12 +240,13 @@ var init = function(configDir, callback) {
     state.running = true;
 
     //Start listening in the chat
-    fb(configDir + "/facebook.json", function(err, api) {
+    fb(creds, function(err, api) {
         if (err) {
             state.running = false;
             console.error("[-] Error starting bot " + err);
             return callback(err, null);
         }
+        api.setOptions({logLevel: "warn"});
         api.listen(chatListener);
         
         chat = api;
