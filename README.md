@@ -23,7 +23,7 @@ You can configure the bot by placing the following JSON files in a configuration
     "name": "bot name (used for chat commands)",
     "chatId": <chat id to send automatic updates>,
     "scrapeInterval": <frequency of scrapes (in ms)>,
-    "remoteAdmin": <1 or 0>,
+    "remoteAdmin": <1 or 0>
  }
 ```
 
@@ -50,7 +50,7 @@ Will call `callback` with a function to stop the bot.
 
 ##### Example usage
 ```js
-var bot = require("kijiji-fb-notifier");
+var bot = require("kijiji-fb-bot");
 
 bot("json/botconfig", function(err, stop) {
     //The bot will work its magic
