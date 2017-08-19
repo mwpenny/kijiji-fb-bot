@@ -1,11 +1,11 @@
 {
   "name": "kijiji-fb-bot",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "A bot that sends Facebook messages with new Kijiji ads",
   "main": "index.js",
   "dependencies": {
     "facebook-chat-api": "~0.2.10",
-    "kijiji-scraper": "~1.2.0"
+    "kijiji-scraper": "~2.0.0"
   },
   "devDependencies": {},
   "scripts": {},
